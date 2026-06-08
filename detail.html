@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户详情 - 张楚乔医生客户随访管理</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .back-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .client-selector {
+            margin-bottom: 20px;
+        }
+        .client-selector label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .client-selector select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            cursor: pointer;
+        }
+        .client-selector select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        .intervention-count {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 20px;
+        }
+        .record-item {
+            padding: 20px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        .record-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .record-title {
+            font-weight: 600;
+            color: #fff;
+            font-size: 16px;
+        }
+        .record-status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+        .status-pending {
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+        }
+        .status-done {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+        .status-overdue {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        .record-info {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        .record-notes {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: rgba(251, 191, 36, 0.1);
+            border-radius: 8px;
+            border-left: 2px solid rgba(251, 191, 36, 0.5);
+        }
+        .record-notes .label {
+            color: rgba(251, 191, 36, 0.9);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .record-notes .content {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+        }
+        .no-records {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.25);
+            padding: 60px 20px;
+            font-size: 14px;
+        }
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+        }
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 0, 80, 0.15);
+            border: 1px solid rgba(255, 0, 80, 0.3);
+            border-radius: 8px;
+            color: #ff5080;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 0, 80, 0.25);
+            border-color: #ff5080;
+            box-shadow: 0 0 15px rgba(255, 0, 80, 0.3);
+        }
+        .logout-btn::before {
+            content: '× ';
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-nav">
+            <a href="index.html" class="back-btn">◀ 返回列表</a>
+            <button class="logout-btn" onclick="logout()">登出</button>
+        </div>
+        <h1 id="pageTitle">客户详情</h1>
+
+        <div class="card">
+            <h2>选择客户</h2>
+            <div class="client-selector" style="padding: 24px;">
+                <label>选择查看的客户</label>
+                <select id="clientSelect"></select>
+            </div>
+        </div>
+
+        <div class="intervention-count" id="recordCount"></div>
+
+        <div id="recordList"></div>
+    </div>
+
+    <script src="detail.js"></script>
+    <script>
+        // 检查登录状态
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('认证检查失败:', error);
+            }
+        }
+
+        // 登出功能
+        async function logout() {
+            if (confirm('确定要登出吗？')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('登出失败:', error);
+                }
+            }
+        }
+
+        // 页面加载时检查认证
+        checkAuth();
+    </script>
+</body>
+</html>

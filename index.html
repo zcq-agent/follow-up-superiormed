@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>张楚乔医生客户随访管理</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .vip-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(251, 146, 60, 0.15) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            color: rgba(251, 191, 36, 0.9);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            transition: all 0.2s ease;
+        }
+        .vip-link:hover {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.25) 0%, rgba(251, 146, 60, 0.25) 100%);
+            border-color: rgba(251, 191, 36, 0.5);
+            transform: translateY(-1px);
+        }
+        .vip-link::before {
+            content: '★';
+        }
+        .client-name-link {
+            cursor: pointer;
+            text-decoration: underline;
+            text-decoration-color: rgba(102, 126, 234, 0.6);
+            transition: all 0.2s ease;
+        }
+        .client-name-link:hover {
+            color: #667eea;
+            text-decoration-color: #667eea;
+        }
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+        }
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 0, 80, 0.15);
+            border: 1px solid rgba(255, 0, 80, 0.3);
+            border-radius: 8px;
+            color: #ff5080;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 0, 80, 0.25);
+            border-color: #ff5080;
+            box-shadow: 0 0 15px rgba(255, 0, 80, 0.3);
+        }
+        .logout-btn::before {
+            content: '× ';
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-nav">
+            <a href="vip.html" class="vip-link">大客户管理</a>
+            <button class="logout-btn" onclick="logout()">登出</button>
+        </div>
+        <h1>张楚乔医生客户随访管理</h1>
+
+        <div class="card">
+            <h2>添加客户</h2>
+            <form id="clientForm">
+                <div class="form-group">
+                    <label>客户姓名</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label>干预项目</label>
+                    <input type="text" id="intervention" required placeholder="例如：营养补充、生活方式调整">
+                </div>
+                <div class="form-group">
+                    <label>干预时间</label>
+                    <input type="datetime-local" id="interventionTime" required>
+                </div>
+                <div class="form-group">
+                    <label>提醒时间</label>
+                    <input type="datetime-local" id="reminderTime" required>
+                </div>
+                <div class="form-group">
+                    <label>注意事项</label>
+                    <input type="text" id="notes" placeholder="例如：重点关注的健康指标、过敏信息等">
+                </div>
+                <button type="submit">添加</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>客户列表</h2>
+                <button id="testWxNotify" class="secondary">测试微信通知</button>
+            </div>
+            <div id="clientList"></div>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // 检查登录状态
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('认证检查失败:', error);
+            }
+        }
+
+        // 登出功能
+        async function logout() {
+            if (confirm('确定要登出吗？')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('登出失败:', error);
+                }
+            }
+        }
+
+        // 页面加载时检查认证
+        checkAuth();
+    </script>
+</body>
+</html>

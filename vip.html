@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大客户管理 - 张楚乔医生客户随访管理</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .back-link {
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: inline-block;
+            transition: color 0.2s;
+        }
+        .back-link:hover {
+            color: #fff;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 16px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+        .form-group textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 12px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 3px;
+            top: 14px;
+            width: 2px;
+            height: calc(100% + 4px);
+            background: rgba(102, 126, 234, 0.3);
+        }
+        .timeline-item:last-child::after {
+            display: none;
+        }
+        .timeline-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 4px;
+        }
+        .timeline-content {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .indicator-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 2px;
+            background: rgba(251, 191, 36, 0.15);
+            border-radius: 6px;
+            font-size: 12px;
+            color: rgba(251, 191, 36, 0.9);
+        }
+        .edit-btn {
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        .edit-btn:hover {
+            background: rgba(102, 126, 234, 0.3);
+            color: #a5b4fc;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .modal-actions button {
+            flex: 1;
+            margin-top: 0;
+        }
+        .modal-actions .cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+        }
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(255, 0, 80, 0.15);
+            border: 1px solid rgba(255, 0, 80, 0.3);
+            border-radius: 8px;
+            color: #ff5080;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 0, 80, 0.25);
+            border-color: #ff5080;
+            box-shadow: 0 0 15px rgba(255, 0, 80, 0.3);
+        }
+        .logout-btn::before {
+            content: '× ';
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-nav">
+            <a href="index.html" class="back-link">◀ 返回主页</a>
+            <button class="logout-btn" onclick="logout()">登出</button>
+        </div>
+        <h1>大客户管理</h1>
+
+        <div class="card">
+            <h2>添加大客户</h2>
+            <form id="vipForm">
+                <div class="form-group">
+                    <label>客户姓名</label>
+                    <input type="text" id="vipName" required>
+                </div>
+                <div class="form-group">
+                    <label>治疗时间线</label>
+                    <textarea id="vipTimeline" placeholder="请输入治疗时间线，每条记录一行，例如：&#10;2024-01-15：首次营养干预&#10;2024-02-20：肠道菌群调整&#10;2024-03-25：重金属排毒"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>主要检测阳性指标</label>
+                    <textarea id="vipIndicators" placeholder="请输入阳性指标，例如：&#10;重金属超标：铅、汞&#10;营养缺乏：维生素D、镁&#10;炎症指标：CRP偏高"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>注意事项</label>
+                    <textarea id="vipNotes" placeholder="例如：海鲜过敏、对青霉素过敏、不能空腹采血等"></textarea>
+                </div>
+                <button type="submit">添加大客户</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>大客户列表</h2>
+            <div id="vipList"></div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2 class="modal-title">编辑大客户</h2>
+            <form id="editForm">
+                <div class="form-group">
+                    <label>客户姓名</label>
+                    <input type="text" id="editName" required>
+                </div>
+                <div class="form-group">
+                    <label>治疗时间线</label>
+                    <textarea id="editTimeline"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>主要检测阳性指标</label>
+                    <textarea id="editIndicators"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>注意事项</label>
+                    <textarea id="editNotes"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="cancel" onclick="closeModal()">取消</button>
+                    <button type="submit">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="vip.js"></script>
+    <script>
+        // 检查登录状态
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('认证检查失败:', error);
+            }
+        }
+
+        // 登出功能
+        async function logout() {
+            if (confirm('确定要登出吗？')) {
+                try {
+                    const response = await fetch('/api/logout', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = '/login.html';
+                    }
+                } catch (error) {
+                    console.error('登出失败:', error);
+                }
+            }
+        }
+
+        // 页面加载时检查认证
+        checkAuth();
+    </script>
+</body>
+</html>
