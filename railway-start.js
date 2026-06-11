@@ -6,6 +6,24 @@ const path = require('path');
 
 require('dotenv').config();
 
+// 立即创建必要的目录（在加载任何模块之前）
+const dataDir = path.join(__dirname, 'data');
+const uploadsDir = path.join(dataDir, 'uploads');
+
+try {
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+        console.log('✅ Created data directory');
+    }
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        console.log('✅ Created uploads directory');
+    }
+    console.log('✅ Directories ready');
+} catch (error) {
+    console.error('❌ Failed to create directories:', error);
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -27,23 +45,6 @@ let mainServerLoaded = false;
 async function loadMainServer() {
     try {
         console.log('🔍 Loading main server...');
-
-        // 创建数据目录
-        const fs = require('fs');
-        const path = require('path');
-
-        const dataDir = path.join(__dirname, 'data');
-        const uploadsDir = path.join(dataDir, 'uploads');
-
-        if (!fs.existsSync(dataDir)) {
-            fs.mkdirSync(dataDir, { recursive: true });
-            console.log('✅ Created data directory');
-        }
-
-        if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-            console.log('✅ Created uploads directory');
-        }
 
         // 加载完整的服务器
         const serverModule = require('./server.js');
