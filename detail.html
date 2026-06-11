@@ -148,6 +148,209 @@
             content: '× ';
             font-size: 16px;
         }
+        /* 图片管理样式 */
+        .images-section {
+            margin-top: 24px;
+        }
+        .images-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .images-title {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+        .upload-btn {
+            padding: 8px 16px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            color: #00ffff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .upload-btn:hover {
+            background: rgba(0, 255, 255, 0.25);
+            border-color: rgba(0, 255, 255, 0.5);
+        }
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .image-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .image-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .image-info {
+            padding: 12px;
+        }
+        .image-type {
+            font-size: 12px;
+            color: rgba(0, 255, 255, 0.8);
+            margin-bottom: 4px;
+        }
+        .image-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 8px;
+        }
+        .image-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .view-btn {
+            background: rgba(102, 126, 234, 0.2);
+            color: #a5b4fc;
+        }
+        .view-btn:hover {
+            background: rgba(102, 126, 234, 0.3);
+        }
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        .no-images {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+        }
+        .upload-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: rgba(20, 20, 30, 0.95);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 16px;
+            color: #fff;
+            font-weight: 600;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .upload-area {
+            border: 2px dashed rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: rgba(0, 255, 255, 0.5);
+            background: rgba(0, 255, 255, 0.05);
+        }
+        .upload-area-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .upload-area-hint {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+        }
+        .document-type-select {
+            margin-top: 16px;
+        }
+        .document-type-select select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 14px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .modal-btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .modal-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .modal-btn-confirm {
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+        }
+        .modal-btn-confirm:hover {
+            background: rgba(0, 255, 255, 0.3);
+        }
+        .modal-btn-confirm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -168,7 +371,43 @@
 
         <div class="intervention-count" id="recordCount"></div>
 
+        <!-- 图片管理区域 -->
+        <div class="images-section">
+            <div class="images-header">
+                <span class="images-title">📸 医疗图片记录</span>
+                <button class="upload-btn" onclick="openUploadModal()">+ 上传图片</button>
+            </div>
+            <div class="images-grid" id="imagesGrid"></div>
+        </div>
+
         <div id="recordList"></div>
+    </div>
+
+    <!-- 上传图片模态框 -->
+    <div class="upload-modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">上传医疗图片</span>
+                <button class="modal-close" onclick="closeUploadModal()">×</button>
+            </div>
+            <div class="upload-area" onclick="document.getElementById('imageInput').click()">
+                <input type="file" id="imageInput" accept="image/*" hidden>
+                <div class="upload-area-text">点击或拖拽上传图片</div>
+                <div class="upload-area-hint">支持JPG、PNG格式，文件大小不超过10MB</div>
+            </div>
+            <div class="document-type-select">
+                <select id="documentType">
+                    <option value="血液检查">血液检查</option>
+                    <option value="病历记录">病历记录</option>
+                    <option value="体检报告">体检报告</option>
+                    <option value="检查报告">检查报告</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeUploadModal()">取消</button>
+                <button class="modal-btn modal-btn-confirm" id="confirmUploadBtn" onclick="confirmUpload()" disabled>上传并识别</button>
+            </div>
+        </div>
     </div>
 
     <script src="detail.js"></script>

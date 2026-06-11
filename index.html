@@ -72,9 +72,156 @@
             content: '× ';
             font-size: 16px;
         }
+        /* 上传图片展示区域 */
+        .uploaded-images {
+            margin-top: 24px;
+        }
+        .images-title {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 16px;
+        }
+        .images-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .image-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .image-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .image-item img:hover {
+            opacity: 0.8;
+        }
+        .image-info {
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .image-type {
+            font-size: 12px;
+            color: rgba(0, 255, 255, 0.8);
+            margin-bottom: 4px;
+        }
+        .image-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .delete-image-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.9);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .image-item:hover .delete-image-btn {
+            opacity: 1;
+        }
+        .delete-image-btn:hover {
+            background: rgba(239, 68, 68, 1);
+        }
+        .no-uploaded-images {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 13px;
+        }
+        /* 图片模态框样式 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            animation: fadeIn 0.2s ease;
+        }
+        .image-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            animation: zoomIn 0.2s ease;
+        }
+        .image-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            z-index: 1001;
+        }
+        .image-modal-close:hover {
+            color: #00ffff;
+        }
+        .image-modal-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 1001;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
+    <!-- 简洁的科幻装饰 -->
+    <div class="tech-grid"></div>
+    <div class="holo-scan"></div>
+
+    <!-- HUD 角落装饰 -->
+    <div class="hud-corner top-left"></div>
+    <div class="hud-corner top-right"></div>
+    <div class="hud-corner bottom-left"></div>
+    <div class="hud-corner bottom-right"></div>
+
+    <!-- 图片模态框 -->
+    <div id="imageModal" class="image-modal">
+        <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+        <img id="modalImage" class="image-modal-content" src="" alt="原图">
+        <div id="modalImageInfo" class="image-modal-info"></div>
+    </div>
+
     <div class="container">
         <div class="header-nav">
             <a href="vip.html" class="vip-link">大客户管理</a>
@@ -110,6 +257,38 @@
         </div>
 
         <div class="card">
+            <h2>📸 医疗图片识别</h2>
+            <div class="medical-upload-section">
+                <div class="form-group">
+                    <label>上传医疗图片（自动识别数据）</label>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="medicalImage" accept="image/*" hidden>
+                        <p>拖拽图片到此或<span class="upload-link">点击选择</span></p>
+                        <p style="font-size: 12px; color: #888;">支持JPG、PNG格式，文件大小不超过10MB</p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>文档类型</label>
+                    <select id="documentType">
+                        <option value="血液检查">血液检查</option>
+                        <option value="病历记录">病历记录</option>
+                        <option value="体检报告">体检报告</option>
+                        <option value="检查报告">检查报告</option>
+                    </select>
+                </div>
+                <div id="uploadStatus"></div>
+            </div>
+        </div>
+
+        <!-- 已上传的图片 -->
+        <div class="card">
+            <div class="uploaded-images">
+                <div class="images-title">📸 最近上传的图片</div>
+                <div class="images-list" id="uploadedImagesList"></div>
+            </div>
+        </div>
+
+        <div class="card">
             <div class="card-header">
                 <h2>客户列表</h2>
                 <button id="testWxNotify" class="secondary">测试微信通知</button>
@@ -121,6 +300,7 @@
     </div>
 
     <script src="app.js"></script>
+    <script src="medicalClient.js"></script>
     <script>
         // 检查登录状态
         async function checkAuth() {

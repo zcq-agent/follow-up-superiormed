@@ -20,13 +20,35 @@
     100% { background-position: 0% 50%; }
 }
 
+@keyframes data-stream {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 100%; }
+}
+
+@keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes rotate-border {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes holo-scan-move {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { top: 100%; opacity: 0; }
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
                  "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI",
                  Roboto, "Helvetica Neue", Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+    background: linear-gradient(135deg, #05070a 0%, #0a0f18 50%, #05070a 100%);
     min-height: 100vh;
     padding: 0;
     color: #fff;
@@ -65,6 +87,144 @@ body::after {
     pointer-events: none;
     z-index: 1;
     animation: scan 8s linear infinite;
+}
+
+/* 简化的全息扫描线效果 */
+body .holo-scan {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0, 255, 255, 0.2) 50%,
+        transparent 100%);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    animation: holo-scan-move 8s linear infinite;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* HUD 装饰元素 */
+.hud-corner {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0.3;
+}
+
+.hud-corner::before,
+.hud-corner::after {
+    content: '';
+    position: absolute;
+    background: #00ffff;
+}
+
+.hud-corner.top-left {
+    top: 40px;
+    left: 40px;
+}
+
+.hud-corner.top-left::before {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+}
+
+.hud-corner.top-left::after {
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 100%;
+}
+
+.hud-corner.top-right {
+    top: 40px;
+    right: 40px;
+}
+
+.hud-corner.top-right::before {
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+}
+
+.hud-corner.top-right::after {
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+}
+
+.hud-corner.bottom-left {
+    bottom: 40px;
+    left: 40px;
+}
+
+.hud-corner.bottom-left::before {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+}
+
+.hud-corner.bottom-left::after {
+    bottom: 0;
+    left: 0;
+    width: 1px;
+    height: 100%;
+}
+
+.hud-corner.bottom-right {
+    bottom: 40px;
+    right: 40px;
+}
+
+.hud-corner.bottom-right::before {
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 1px;
+}
+
+.hud-corner.bottom-right::after {
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+}
+
+/* 浮动粒子效果 */
+.floating-particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.floating-particles::before {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #00ffff;
+    border-radius: 50%;
+    box-shadow:
+        100px 200px #00ffff,
+        200px 100px #8a2be2,
+        300px 300px #00ffff,
+        400px 150px #8a2be2,
+        500px 250px #00ffff;
+    animation: float-particle 8s linear infinite;
 }
 
 .tech-grid {
@@ -140,7 +300,7 @@ h1::before {
 }
 
 .card {
-    background: rgba(13, 17, 23, 0.8);
+    background: rgba(5, 10, 20, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 255, 255, 0.2);
@@ -177,13 +337,13 @@ h1::before {
 
 .card:hover {
     border-color: rgba(0, 255, 255, 0.4);
-    background: rgba(13, 17, 23, 0.9);
-    transform: translateY(-2px);
+    background: rgba(5, 10, 20, 0.9);
+    transform: translateY(-1px);
     box-shadow:
         0 0 0 1px rgba(0, 255, 255, 0.2),
-        0 8px 32px rgba(0, 255, 255, 0.15),
-        0 0 40px rgba(0, 255, 255, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        0 8px 32px rgba(0, 255, 255, 0.1),
+        0 0 40px rgba(0, 255, 255, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 #clientForm, #configForm {
@@ -216,16 +376,18 @@ h1::before {
                  "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
     width: 100%;
     padding: 16px 20px;
-    border: 1px solid rgba(0, 255, 255, 0.2);
+    border: 1px solid rgba(0, 255, 255, 0.3);
     border-radius: 8px;
     font-size: 15px;
     font-weight: 400;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 10, 20, 0.6);
     color: #ffffff;
     transition: all 0.2s ease;
     box-shadow:
-        0 0 0 1px rgba(0, 255, 255, 0.1),
-        inset 0 1px 3px rgba(0, 0, 0, 0.3);
+        0 0 0 1px rgba(0, 255, 255, 0.15),
+        inset 0 1px 3px rgba(0, 0, 0, 0.5),
+        0 0 20px rgba(0, 255, 255, 0.05);
+    position: relative;
 }
 
 .form-group input::placeholder, .form-group textarea::placeholder {
@@ -268,12 +430,15 @@ button {
     color: #000;
     margin-top: 8px;
     box-shadow:
-        0 0 20px rgba(0, 255, 255, 0.4),
+        0 0 20px rgba(0, 255, 255, 0.5),
+        0 0 40px rgba(0, 255, 255, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
     animation: border-flow 3s ease infinite;
     position: relative;
     overflow: hidden;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
 }
 
 #clientForm button::before, #configForm button::before, #vipForm button::before {
@@ -292,10 +457,10 @@ button {
 }
 
 #clientForm button:hover, #configForm button:hover, #vipForm button:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     box-shadow:
-        0 0 30px rgba(0, 255, 255, 0.6),
-        0 0 60px rgba(0, 255, 255, 0.3),
+        0 0 25px rgba(0, 255, 255, 0.5),
+        0 0 50px rgba(0, 255, 255, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
@@ -881,4 +1046,245 @@ button.delete:hover {
 ::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, rgba(0, 255, 255, 0.6), rgba(138, 43, 226, 0.6));
     border-color: rgba(0, 255, 255, 0.5);
+}
+
+/* 医疗上传相关样式 */
+.medical-upload-section {
+    padding: 20px 0;
+}
+
+.upload-area {
+    border: 2px dashed rgba(0, 255, 255, 0.4);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(0, 255, 255, 0.05);
+    position: relative;
+}
+
+.upload-area:hover {
+    border-color: rgba(0, 255, 255, 0.6);
+    background: rgba(0, 255, 255, 0.12);
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, 0.2),
+        inset 0 0 20px rgba(0, 255, 255, 0.05);
+}
+
+.upload-area p {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 8px 0;
+}
+
+.upload-link {
+    color: #00ffff;
+    text-decoration: underline;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#uploadBtn {
+    margin-top: 16px;
+}
+
+#uploadStatus {
+    margin-top: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+#uploadStatus.loading {
+    background: rgba(102, 126, 234, 0.2);
+    color: #a5b4fc;
+}
+
+#uploadStatus.success {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+}
+
+#uploadStatus.error {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+/* 医疗数据预览 */
+.extraction-preview {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.extraction-section {
+    margin-bottom: 16px;
+}
+
+.extraction-section-title {
+    color: #00ffff;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.extraction-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.extraction-item:last-child {
+    border-bottom: none;
+}
+
+.extraction-item-label {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+}
+
+.extraction-item-value {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    max-width: 60%;
+    text-align: right;
+}
+
+/* Modal相关 */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.modal-header h3 {
+    color: #00ffff;
+    font-size: 16px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    color: #00ffff;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-footer button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.modal-footer button:first-child {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.modal-footer button:first-child:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-footer button:last-child {
+    background: rgba(0, 255, 255, 0.2);
+    color: #00ffff;
+}
+
+.modal-footer button:last-child:hover {
+    background: rgba(0, 255, 255, 0.3);
+}
+
+/* ========== 额外科幻效果 ========== */
+
+/* 扫描网格覆盖层 */
+.scan-grid-overlay {
+
+/* ========== 简化的科幻效果 ========== */
+
+/* 状态指示器 */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00ffff;
+    box-shadow: 0 0 6px rgba(0, 255, 255, 0.5);
+}
+
+.status-indicator.success {
+    background: #00ff00;
+    box-shadow: 0 0 6px rgba(0, 255, 0, 0.5);
+}
+
+.status-indicator.error {
+    background: #ff0000;
+    box-shadow: 0 0 6px rgba(255, 0, 0, 0.5);
+}
+
+/* 滚动条科幻效果 */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(0, 255, 255, 0.5), rgba(138, 43, 226, 0.5));
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(0, 255, 255, 0.7), rgba(138, 43, 226, 0.7));
 }

@@ -4,13 +4,13 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const session = require('express-session');
+const medicalRoutes = require('./routes/medicalRoutes');
 require('dotenv').config();
 
 const app = express();
 app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));
 
 // Session 配置
 app.use(session({
@@ -25,10 +25,30 @@ app.use(session({
     }
 }));
 
+// 保护静态页面和敏感文件
+const protectedPages = ['/', '/index.html', '/vip.html', '/detail.html'];
+app.use((req, res, next) => {
+    if (protectedPages.includes(req.path)) {
+        return requireAuthPage(req, res, next);
+    }
+
+    // 允许访问上传的图片，但保护其他数据文件
+    if ((req.path.startsWith('/data/') && !req.path.startsWith('/data/uploads/')) || req.path === '/server.js' || req.path === '/package.json' || req.path === '/package-lock.json' || req.path === '/.env' || req.path.startsWith('/.git')) {
+        return res.status(404).end();
+    }
+
+    next();
+});
+
+app.use(express.static('.'));
+
+// ========== 医疗数据识别相关路由 ==========
+app.use('/api/medical', medicalRoutes);
+
 // Server酱 SendKey（从环境变量读取）
 const SEND_KEY = process.env.SEND_KEY;
 // 登录密码（从环境变量读取，默认密码）
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // 数据文件路径
 const DATA_DIR = path.join(__dirname, 'data');
@@ -158,6 +178,7 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
 
     // 注意：这里只是临时修改，重启后会恢复
     // 永久修改需要在环境变量中设置
+    ADMIN_PASSWORD = newPassword;
     process.env.ADMIN_PASSWORD = newPassword;
 
     res.json({ success: true, message: '密码修改成功（当前会话有效）' });
@@ -193,6 +214,7 @@ app.post('/api/clients', requireAuth, (req, res) => {
     const client = req.body;
     client.id = Date.now();
     client.notified = false;
+    client.images = client.images || []; // 添加图片关联数组
     clients.push(client);
     saveData(clients);
     res.json({ success: true, client });
@@ -246,6 +268,86 @@ app.delete('/api/vips/:id', requireAuth, (req, res) => {
     res.json({ success: true });
 });
 
+// ========== 图片管理 API ==========
+
+// API: 获取客户的所有图片
+app.get('/api/clients/:id/images', requireAuth, (req, res) => {
+    const id = parseInt(req.params.id);
+    const client = clients.find(c => c.id === id);
+    if (!client) {
+        return res.status(404).json({ success: false, message: '客户不存在' });
+    }
+    res.json({ success: true, images: client.images || [] });
+});
+
+// API: 添加图片到客户
+app.post('/api/clients/:id/images', requireAuth, (req, res) => {
+    const id = parseInt(req.params.id);
+    const { imageId, imageData, documentType } = req.body;
+
+    const client = clients.find(c => c.id === id);
+    if (!client) {
+        return res.status(404).json({ success: false, message: '客户不存在' });
+    }
+
+    if (!client.images) {
+        client.images = [];
+    }
+
+    // 添加图片记录
+    const imageRecord = {
+        id: Date.now(),
+        imageId: imageId,
+        filePath: `/data/uploads/${imageId}`,
+        documentType: documentType || '未知',
+        uploadTime: new Date().toISOString(),
+        extractedData: imageData || null
+    };
+
+    client.images.push(imageRecord);
+    saveData(clients);
+
+    res.json({ success: true, image: imageRecord });
+});
+
+// API: 删除客户的图片
+app.delete('/api/clients/:id/images/:imageId', requireAuth, (req, res) => {
+    const id = parseInt(req.params.id);
+    const imageId = parseInt(req.params.imageId);
+
+    const client = clients.find(c => c.id === id);
+    if (!client) {
+        return res.status(404).json({ success: false, message: '客户不存在' });
+    }
+
+    if (!client.images) {
+        return res.status(404).json({ success: false, message: '无图片记录' });
+    }
+
+    const imageIndex = client.images.findIndex(img => img.id === imageId);
+    if (imageIndex === -1) {
+        return res.status(404).json({ success: false, message: '图片不存在' });
+    }
+
+    const imageRecord = client.images[imageIndex];
+
+    // 删除文件系统中的图片
+    try {
+        const imagePath = path.join(__dirname, 'data', 'uploads', imageRecord.imageId);
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+        }
+    } catch (error) {
+        console.error('删除图片文件失败:', error);
+    }
+
+    // 从客户记录中删除
+    client.images.splice(imageIndex, 1);
+    saveData(clients);
+
+    res.json({ success: true, message: '图片已删除' });
+});
+
 // API: 测试通知
 app.get('/api/test', requireAuth, async (req, res) => {
     const success = await sendWxNotify('测试通知', '功能医学随访提醒功能正常！');
@@ -256,6 +358,11 @@ app.get('/api/test', requireAuth, async (req, res) => {
 
 // 发送微信通知
 async function sendWxNotify(title, content) {
+    if (!SEND_KEY) {
+        console.error('微信通知失败: SEND_KEY 未配置');
+        return false;
+    }
+
     try {
         const fetch = require('node-fetch');
         const response = await fetch(`https://sctapi.ftqq.com/${SEND_KEY}.send`, {
@@ -304,6 +411,7 @@ function checkReminders() {
             sendWxNotify('🔔 随访提醒', content).then(success => {
                 if (success) {
                     client.notified = true;
+                    saveData(clients);
                     console.log(`已通知: ${client.name}`);
                 }
             });
