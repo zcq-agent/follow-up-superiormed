@@ -8,6 +8,12 @@ const medicalRoutes = require('./routes/medicalRoutes');
 require('dotenv').config();
 
 const app = express();
+
+// 确保数据目录存在
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
@@ -51,14 +57,8 @@ const SEND_KEY = process.env.SEND_KEY;
 let ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // 数据文件路径
-const DATA_DIR = path.join(__dirname, 'data');
 const CLIENTS_FILE = path.join(DATA_DIR, 'clients.json');
 const VIPS_FILE = path.join(DATA_DIR, 'vips.json');
-
-// 确保数据目录存在
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR);
-}
 
 // 加载数据
 function loadData() {
@@ -425,8 +425,14 @@ cron.schedule('* * * * *', () => {
     checkReminders();
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`服务运行在端口 ${PORT}`);
-    console.log(`默认密码: ${ADMIN_PASSWORD} (请在环境变量中设置 ADMIN_PASSWORD 修改)`);
-});
+// 导出 app 以供外部使用
+module.exports = app;
+
+// 如果直接运行此文件，则启动服务器
+if (require.main === module) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`服务运行在端口 ${PORT}`);
+        console.log(`默认密码: ${ADMIN_PASSWORD} (请在环境变量中设置 ADMIN_PASSWORD 修改)`);
+    });
+}

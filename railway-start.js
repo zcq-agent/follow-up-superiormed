@@ -1,6 +1,4 @@
-// Railway 优化版本 - v2
-const express = require('express');
-const cors = require('cors');
+// Railway 启动文件
 const fs = require('fs');
 const path = require('path');
 
@@ -24,50 +22,14 @@ try {
     console.error('❌ Failed to create directories:', error);
 }
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.static('.'));
+// 加载主服务器
+const app = require('./server.js');
 
-// 健康检查端点（Railway 标准）
-app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'healthy', uptime: process.uptime() });
-});
-
-// 根路径
-app.get('/', (req, res) => {
-    res.send('Follow-up System is Running!');
-});
-
-// 加载主服务器（延迟加载避免启动时的问题）
-let mainServerLoaded = false;
-
-async function loadMainServer() {
-    try {
-        console.log('🔍 Loading main server...');
-
-        // 加载完整的服务器
-        const serverModule = require('./server.js');
-        mainServerLoaded = true;
-        console.log('✅ Main server loaded successfully');
-
-    } catch (error) {
-        console.error('❌ Failed to load main server:', error.message);
-        // 继续运行基础服务器
-    }
-}
-
-// 启动基础服务器
+// 启动服务器
 const PORT = process.env.PORT || 3000;
-
 const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server listening on port ${PORT}`);
-    console.log(`✅ Health check ready`);
-
-    // 延迟加载主服务器
-    setTimeout(() => {
-        loadMainServer();
-    }, 1000);
+    console.log(`✅ Health check ready: http://0.0.0.0:${PORT}/health`);
 });
 
 // 保持容器运行 - 定期输出心跳
@@ -96,10 +58,8 @@ process.on('SIGINT', () => {
 // 错误处理
 process.on('uncaughtException', (error) => {
     console.error('❌ Uncaught Exception:', error);
-    // 不退出，继续运行
 });
 
 process.on('unhandledRejection', (reason, promise) => {
     console.error('❌ Unhandled Rejection:', reason);
-    // 不退出，继续运行
 });
