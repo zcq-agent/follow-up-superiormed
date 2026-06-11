@@ -1,0 +1,15 @@
+builds:
+  - name: follow-up-system
+    buildCommand: npm install
+    startCommand: npm start
+
+services:
+  - name: web
+    type: web
+    build: follow-up-system
+    ports:
+      - port: 3000
+    volumes:
+      - name: data
+        mountPath: /app/data
+    healthcheckPath: /health
