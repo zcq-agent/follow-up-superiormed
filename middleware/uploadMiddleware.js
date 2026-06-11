@@ -5,8 +5,24 @@ const fs = require('fs');
 
 // 确保上传目录存在
 const uploadDir = path.join(__dirname, '../data/uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+console.log('📁 Upload directory:', uploadDir);
+
+try {
+    if (!fs.existsSync(uploadDir)) {
+        console.log('Creating upload directory...');
+        fs.mkdirSync(uploadDir, { recursive: true });
+        console.log('✅ Upload directory created');
+    } else {
+        console.log('✅ Upload directory exists');
+    }
+
+    // 测试写入权限
+    const testFile = path.join(uploadDir, '.write-test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    console.log('✅ Upload directory is writable');
+} catch (error) {
+    console.error('❌ Upload directory error:', error);
 }
 
 // 存储配置
