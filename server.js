@@ -186,6 +186,15 @@ app.post('/api/auth/change-password', requireAuth, (req, res) => {
 
 // ========== 受保护的页面路由 ==========
 
+// 健康检查端点（用于 Railway）
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 // 保护主要页面
 app.get('/index.html', requireAuthPage);
 app.get('/vip.html', requireAuthPage);
