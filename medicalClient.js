@@ -5,15 +5,15 @@ let uploadedImages = []; // 存储已上传的图片信息
 // 初始化医疗上传界面
 function initMedicalUpload() {
     const uploadArea = document.getElementById('uploadArea');
-    const medicalFile = document.getElementById('medicalFile');
+    const medicalImage = document.getElementById('medicalImage');
     const uploadBtn = document.getElementById('uploadBtn');
 
     // 点击上传区域选择文件
     uploadArea.addEventListener('click', () => {
-        medicalFile.click();
+        medicalImage.click();
     });
 
-    // 拖拽上传（支持多文件和文件夹）
+    // 拖拽上传
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.style.borderColor = 'rgba(0, 255, 255, 0.7)';
@@ -32,43 +32,170 @@ function initMedicalUpload() {
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            handleMultipleUpload(Array.from(files)); // 处理多个文件
+            medicalImage.files = files;
+            handleUpload(); // 直接上传
         }
     });
 
     // 文件选择变化 - 自动上传
-    medicalFile.addEventListener('change', () => {
-        if (medicalFile.files.length > 0) {
-            handleMultipleUpload(Array.from(medicalFile.files));
+    medicalImage.addEventListener('change', () => {
+        if (medicalImage.files.length > 0) {
+            handleUpload();
         }
     });
 }
 
-// 处理多文件上传
-async function handleMultipleUpload(files) {
+// 处理上传（自动触发，支持批量）
+async function handleUpload() {
+    const medicalImage = document.getElementById('medicalImage');
     const documentType = document.getElementById('documentType').value;
     const uploadStatus = document.getElementById('uploadStatus');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
 
-    if (files.length === 0) {
+    if (!medicalImage.files || medicalImage.files.length === 0) {
         return;
     }
 
-    try {
-        // 显示进度条
-        uploadProgress.style.display = 'block';
-        showStatus(uploadStatus, `⏳ 正在上传 ${files.length} 个文件...`, 'loading');
+    const files = Array.from(medicalImage.files);
+    const totalFiles = files.length;
+    let processedFiles = 0;
+    let successCount = 0;
 
-        // 创建 FormData
+    console.log(`开始批量上传 ${totalFiles} 个文件`);
+
+    try {
+        // 显示初始状态
+        showStatus(uploadStatus, `⏳ 准备上传 ${totalFiles} 个文件...`, 'loading');
+
+        // 为每个文件执行上传和识别
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            processedFiles++;
+
+            try {
+                // 更新状态
+                showStatus(uploadStatus,
+                    `⏳ 正在处理第 ${processedFiles}/${totalFiles} 个文件: ${file.name}`,
+                    'loading');
+
+                // 1. 上传文件
+                const formData = new FormData();
+                formData.append('files', file);
+
+                const uploadResponse = await fetch('/api/medical/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) {
+                    throw new Error('上传失败');
+                }
+
+                const uploadData = await uploadResponse.json();
+                if (!uploadData.success || !uploadData.files || uploadData.files.length === 0) {
+                    throw new Error(uploadData.message || '上传失败');
+                }
+
+                const uploadedFile = uploadData.files[0];
+                console.log(`文件 ${file.name} 上传成功:`, uploadedFile);
+
+                // 2. 识别数据（仅对支持的格式进行识别）
+                showStatus(uploadStatus,
+                    `⏳ 正在识别第 ${processedFiles}/${totalFiles} 个文件: ${file.name}`,
+                    'loading');
+
+                const extractResponse = await fetch('/api/medical/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageId: uploadedFile.imageId,
+                        documentType: documentType
+                    })
+                });
+
+                let extractedData = null;
+                if (extractResponse.ok) {
+                    const extractData = await extractResponse.json();
+                    if (extractData.success) {
+                        extractedData = extractData.data;
+                        successCount++;
+                        console.log(`文件 ${file.name} 识别成功`);
+                    }
+                }
+
+                // 3. 保存文件信息到本地数组
+                const fileInfo = {
+                    id: Date.now() + i,
+                    imageId: uploadedFile.imageId,
+                    filePath: uploadedFile.filePath,
+                    originalName: uploadedFile.originalName,
+                    documentType: documentType,
+                    uploadTime: new Date().toISOString(),
+                    extractedData: extractedData
+                };
+                uploadedImages.unshift(fileInfo);
+
+                // 4. 如果是最后一个文件或者只有一个文件，显示识别结果
+                if (totalFiles === 1) {
+                    if (extractedData) {
+                        displayExtractionResult(extractedData, 'high', uploadedFile.filePath);
+                    }
+                }
+
+            } catch (error) {
+                console.error(`文件 ${file.name} 处理失败:`, error);
+                // 继续处理下一个文件
+            }
+        }
+
+        // 5. 更新最终状态
+        if (successCount === totalFiles) {
+            showStatus(uploadStatus, `✅ 成功处理 ${successCount}/${totalFiles} 个文件`, 'success');
+        } else if (successCount > 0) {
+            showStatus(uploadStatus, `⚠️ 部分成功: ${successCount}/${totalFiles} 个文件`, 'warning');
+        } else {
+            showStatus(uploadStatus, `❌ 所有文件处理失败`, 'error');
+        }
+
+        // 6. 更新文件列表显示
+        renderUploadedImages();
+
+        // 清除文件选择
+        medicalImage.value = '';
+
+    } catch (error) {
+        console.error('批量上传错误:', error);
+        showStatus(uploadStatus, `❌ ${error.message}`, 'error');
+    }
+}
+
+// 处理上传（自动触发）
+async function handleUpload() {
+    const medicalImage = document.getElementById('medicalImage');
+    const documentType = document.getElementById('documentType').value;
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    if (!medicalImage.files || medicalImage.files.length === 0) {
+        return;
+    }
+
+    const files = Array.from(medicalImage.files);
+    const totalFiles = files.length;
+    let processedFiles = 0;
+    let successCount = 0;
+
+    console.log(`开始批量上传 ${totalFiles} 个文件`);
+
+    try {
+        // 显示初始状态
+        showStatus(uploadStatus, `⏳ 准备上传 ${totalFiles} 个文件...`, 'loading');
+
+        // 收集所有文件到一个 FormData
         const formData = new FormData();
         files.forEach(file => {
             formData.append('files', file);
         });
 
-        // 上传文件
-        progressText.textContent = '正在上传文件...';
+        // 批量上传所有文件
         const uploadResponse = await fetch('/api/medical/upload', {
             method: 'POST',
             body: formData
@@ -79,104 +206,82 @@ async function handleMultipleUpload(files) {
         }
 
         const uploadData = await uploadResponse.json();
-        if (!uploadData.success) {
+        if (!uploadData.success || !uploadData.files || uploadData.files.length === 0) {
             throw new Error(uploadData.message || '上传失败');
         }
 
-        // 更新进度
-        progressFill.style.width = '50%';
-        progressText.textContent = `上传完成，正在识别 ${uploadData.count} 个文件...`;
+        const uploadedFiles = uploadData.files;
+        console.log(`批量上传成功: ${uploadedFiles.length} 个文件`);
 
-        // 为每个文件进行识别
-        const results = [];
-        for (let i = 0; i < uploadData.files.length; i++) {
-            const file = uploadData.files[i];
-            progressText.textContent = `正在识别第 ${i + 1}/${uploadData.count} 个文件...`;
+        // 为每个上传的文件进行识别
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const uploadedFile = uploadedFiles[i];
+            processedFiles++;
 
             try {
-                // 只对支持的文件类型进行识别
-                if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
-                    const extractResponse = await fetch('/api/medical/extract', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            imageId: file.imageId,
-                            documentType: documentType
-                        })
-                    });
+                showStatus(uploadStatus,
+                    `⏳ 正在识别第 ${processedFiles}/${uploadedFiles.length} 个文件: ${uploadedFile.originalName}`,
+                    'loading');
 
-                    if (extractResponse.ok) {
-                        const extractData = await extractResponse.json();
-                        if (extractData.success) {
-                            results.push({ ...file, extractedData: extractData.data });
-                        }
+                // 识别数据
+                const extractResponse = await fetch('/api/medical/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageId: uploadedFile.imageId,
+                        documentType: documentType
+                    })
+                });
+
+                let extractedData = null;
+                if (extractResponse.ok) {
+                    const extractData = await extractResponse.json();
+                    if (extractData.success) {
+                        extractedData = extractData.data;
+                        successCount++;
                     }
-                } else {
-                    // Word 和 Excel 直接保存
-                    results.push({ ...file, extractedData: null });
                 }
+
+                // 保存文件信息
+                const fileInfo = {
+                    id: Date.now() + i,
+                    imageId: uploadedFile.imageId,
+                    filePath: uploadedFile.filePath,
+                    originalName: uploadedFile.originalName,
+                    documentType: documentType,
+                    uploadTime: new Date().toISOString(),
+                    extractedData: extractedData
+                };
+                uploadedImages.unshift(fileInfo);
+
+                // 如果只有一个文件，显示识别结果
+                if (uploadedFiles.length === 1 && extractedData) {
+                    displayExtractionResult(extractedData, 'high', uploadedFile.filePath);
+                }
+
             } catch (error) {
-                console.error(`文件 ${file.originalName} 识别失败:`, error);
-                results.push({ ...file, extractedData: null, error: error.message });
+                console.error(`文件 ${uploadedFile.originalName} 识别失败:`, error);
             }
-
-            // 更新进度
-            const progress = 50 + (i + 1) / uploadData.count * 50;
-            progressFill.style.width = `${progress}%`;
         }
 
-        // 保存到本地数组
-        results.forEach(result => {
-            const imageInfo = {
-                id: Date.now() + Math.random(),
-                imageId: result.imageId,
-                filePath: result.filePath,
-                originalName: result.originalName,
-                documentType: documentType,
-                uploadTime: new Date().toISOString(),
-                extractedData: result.extractedData,
-                mimetype: result.mimetype
-            };
-            uploadedImages.unshift(imageInfo);
-        });
-
-        // 更新显示
-        showStatus(uploadStatus, `✅ 成功上传 ${uploadData.count} 个文件！`, 'success');
-        progressText.textContent = `完成！共处理 ${uploadData.count} 个文件`;
-        progressFill.style.width = '100%';
-
-        // 显示识别结果（如果有）
-        const extractedResults = results.filter(r => r.extractedData);
-        if (extractedResults.length > 0) {
-            extractedResults.forEach(result => {
-                displayExtractionResult(result.extractedData, 'high', result.filePath, result.originalName);
-            });
+        // 更新最终状态
+        if (successCount === uploadedFiles.length) {
+            showStatus(uploadStatus, `✅ 成功处理 ${successCount}/${uploadedFiles.length} 个文件`, 'success');
+        } else if (successCount > 0) {
+            showStatus(uploadStatus, `⚠️ 部分成功: ${successCount}/${uploadedFiles.length} 个文件`, 'warning');
+        } else {
+            showStatus(uploadStatus, `⚠️ 已上传 ${uploadedFiles.length} 个文件，但识别失败`, 'warning');
         }
 
-        // 更新图片列表显示
+        // 更新文件列表显示
         renderUploadedImages();
 
         // 清除文件选择
-        document.getElementById('medicalFile').value = '';
-
-        // 3秒后隐藏进度条
-        setTimeout(() => {
-            uploadProgress.style.display = 'none';
-            progressFill.style.width = '0%';
-        }, 3000);
+        medicalImage.value = '';
 
     } catch (error) {
-        console.error('上传/识别错误:', error);
+        console.error('批量上传错误:', error);
         showStatus(uploadStatus, `❌ ${error.message}`, 'error');
-        uploadProgress.style.display = 'none';
-    }
-}
-
-// 兼容旧的单文件上传函数
-async function handleUpload() {
-    const medicalFile = document.getElementById('medicalFile');
-    if (medicalFile.files.length > 0) {
-        await handleMultipleUpload(Array.from(medicalFile.files));
     }
 }
 
@@ -187,12 +292,11 @@ function showStatus(element, message, type) {
 }
 
 // 直接在页面显示识别结果（按照用户要求的格式）
-function displayExtractionResult(data, confidence, imagePath, fileName = '') {
+function displayExtractionResult(data, confidence, imagePath) {
     let resultHtml = `
         <div class="card" style="margin-top: 20px; border-color: rgba(0, 255, 255, 0.4);">
             <h3 style="color: #00ffff; margin-bottom: 16px;">
                 📋 医学数据识别结果
-                ${fileName ? `<span style="font-size: 12px; color: rgba(0, 255, 255, 0.6); margin-left: 8px;">文件: ${fileName}</span>` : ''}
                 <span style="font-size: 12px; color: rgba(0, 255, 255, 0.6);">
                     (文档类型: ${data.type || '未知'} | 置信度: ${confidence === 'high' ? '高' : confidence === 'medium' ? '中' : '低'})
                 </span>
@@ -264,45 +368,20 @@ function renderUploadedImages() {
     const imagesList = document.getElementById('uploadedImagesList');
 
     if (!uploadedImages || uploadedImages.length === 0) {
-        imagesList.innerHTML = '<div class="no-uploaded-images">暂无上传的文件</div>';
+        imagesList.innerHTML = '<div class="no-uploaded-images">暂无上传的图片</div>';
         return;
     }
 
-    imagesList.innerHTML = uploadedImages.map(image => {
-        const isImage = image.mimetype && image.mimetype.startsWith('image/');
-        const fileIcon = getFileIcon(image.mimetype, image.filePath);
-
-        return `
+    imagesList.innerHTML = uploadedImages.map(image => `
         <div class="image-item">
-            <button class="delete-image-btn" onclick="deleteUploadedImage(${image.id})" title="删除文件">×</button>
-            ${isImage ? `
-                <img src="${image.filePath}" alt="${image.originalName || image.documentType}" onclick="viewUploadedImage('${image.filePath}', '${image.originalName || image.documentType}')">
-            ` : `
-                <div class="file-preview" onclick="viewUploadedFile('${image.filePath}', '${image.originalName || image.documentType}')" style="width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; flex-direction: column; background: rgba(0, 0, 0, 0.3); cursor: pointer;">
-                    <div style="font-size: 48px;">${fileIcon}</div>
-                    <div style="font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 8px; text-align: center; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${image.originalName || '未知文件'}</div>
-                </div>
-            `}
+            <button class="delete-image-btn" onclick="deleteUploadedImage(${image.id})" title="删除图片">×</button>
+            <img src="${image.filePath}" alt="${image.documentType}" onclick="viewUploadedImage('${image.filePath}', '${image.documentType}')">
             <div class="image-info">
                 <div class="image-type">${image.documentType}</div>
                 <div class="image-time">${formatUploadTime(image.uploadTime)}</div>
             </div>
         </div>
-        `;
-    }).join('');
-}
-
-// 获取文件类型图标
-function getFileIcon(mimetype, filePath) {
-    if (!mimetype) return '📄';
-
-    if (mimetype.includes('pdf')) return '📕';
-    if (mimetype.includes('word') || mimetype.includes('doc')) return '📘';
-    if (mimetype.includes('excel') || mimetype.includes('sheet') || mimetype.includes('xls')) return '📗';
-    if (mimetype.includes('image')) return '🖼️';
-    if (mimetype.includes('text')) return '📝';
-
-    return '📄';
+    `).join('');
 }
 
 // 格式化上传时间
@@ -334,11 +413,6 @@ function viewUploadedImage(filePath, documentType) {
 
     // 阻止页面滚动
     document.body.style.overflow = 'hidden';
-}
-
-// 查看上传的文件（在新窗口打开）
-function viewUploadedFile(filePath, fileName) {
-    window.open(filePath, '_blank');
 }
 
 // 关闭图片模态框

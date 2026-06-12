@@ -14,7 +14,7 @@ function requireAuth(req, res, next) {
     }
 }
 
-// POST /api/medical/upload - 上传医疗文件（支持批量）
+// POST /api/medical/upload - 上传医疗文件（支持批量，支持图片、PDF、Word、Excel）
 router.post('/upload', (req, res, next) => {
     console.log('=== 文件上传请求 ===');
     console.log('Session auth:', req.session?.authenticated);
@@ -25,7 +25,7 @@ router.post('/upload', (req, res, next) => {
     next();
 }, upload.array('files', 20), (req, res) => {
     console.log('=== Multer 处理后 ===');
-    console.log('请求文件数量:', req.files?.length || 0);
+    console.log('上传文件数量:', req.files?.length);
     console.log('请求体:', req.body);
 
     if (!req.files || req.files.length === 0) {
@@ -33,8 +33,8 @@ router.post('/upload', (req, res, next) => {
         return res.status(400).json({ success: false, message: '未上传文件' });
     }
 
-    // 处理多个文件
-    const files = req.files.map(file => ({
+    // 处理所有上传的文件
+    const uploadedFiles = req.files.map(file => ({
         imageId: file.filename,
         filePath: `/data/uploads/${file.filename}`,
         originalName: file.originalname,
@@ -44,9 +44,8 @@ router.post('/upload', (req, res, next) => {
 
     const response = {
         success: true,
-        files: files,
-        count: files.length,
-        message: files.length > 1 ? `成功上传 ${files.length} 个文件` : '上传成功'
+        files: uploadedFiles,
+        message: `成功上传 ${uploadedFiles.length} 个文件`
     };
     console.log('上传响应:', response);
     res.json(response);

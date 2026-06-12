@@ -1,43 +1,123 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
+const pdfParse = require('pdf-parse');
+const XLSX = require('xlsx');
+const mammoth = require('mammoth');
 
-// 懒加载文档处理库（避免启动时崩溃）
-let pdfParse, xlsx, mammoth;
+// 检测文件类型
+function getFileType(filePath) {
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+        '.pdf': 'pdf',
+        '.doc': 'word',
+        '.docx': 'word',
+        '.xls': 'excel',
+        '.xlsx': 'excel',
+        '.jpg': 'image',
+        '.jpeg': 'image',
+        '.png': 'image'
+    };
+    return mimeTypes[ext] || 'unknown';
+}
 
-function loadLibs() {
+// 提取PDF文本
+async function extractPDF(filePath) {
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdfParse(dataBuffer);
+    return data.text;
+}
+
+// 提取Word文本
+async function extractWord(filePath) {
+    const result = await mammoth.extractRawText({ path: filePath });
+    return result.value;
+}
+
+// 提取Excel文本
+async function extractExcel(filePath) {
+    const workbook = XLSX.readFile(filePath);
+    let fullText = '';
+
+    workbook.SheetNames.forEach(sheetName => {
+        const worksheet = workbook.Sheets[sheetName];
+        const sheetText = XLSX.utils.sheet_to_txt(worksheet);
+        fullText += `=== ${sheetName} ===\n${sheetText}\n\n`;
+    });
+
+    return fullText;
+}
+
+// 调用智谱GLM-4V API - 统一的文档数据提取入口
+async function extractMedicalData(filePath, documentType) {
     try {
-        if (!pdfParse) pdfParse = require('pdf-parse');
-        if (!xlsx) xlsx = require('xlsx');
-        if (!mammoth) mammoth = require('mammoth');
+        console.log('=== 开始文档数据提取 ===');
+        console.log('文件路径:', filePath);
+        console.log('文档类型:', documentType);
+
+        const fileType = getFileType(filePath);
+        console.log('检测到的文件类型:', fileType);
+
+        let extractedText = '';
+
+        // 根据文件类型选择提取方法
+        switch (fileType) {
+            case 'pdf':
+                console.log('使用 PDF 解析');
+                extractedText = await extractPDF(filePath);
+                break;
+
+            case 'word':
+                console.log('使用 Word 解析');
+                extractedText = await extractWord(filePath);
+                break;
+
+            case 'excel':
+                console.log('使用 Excel 解析');
+                extractedText = await extractExcel(filePath);
+                break;
+
+            case 'image':
+                console.log('使用 OCR 图片识别');
+                return await extractFromImage(filePath, documentType);
+
+            default:
+                return {
+                    success: false,
+                    error: '不支持的文件类型',
+                    data: null
+                };
+        }
+
+        // 对于 PDF/Word/Excel，直接返回提取的文本
+        // 这些格式的文本提取是精确的，保持了原始格式
+        return {
+            success: true,
+            data: {
+                fullContent: extractedText,
+                type: documentType
+            },
+            rawContent: extractedText,
+            confidence: 'high'
+        };
+
     } catch (error) {
-        console.error('加载文档处理库失败:', error.message);
+        console.error('文档数据提取失败:', error);
+        return {
+            success: false,
+            error: error.message || '未知错误',
+            data: null
+        };
     }
 }
 
-// 调用智谱GLM-4V API
-async function extractMedicalData(imagePath, documentType) {
+// 图片OCR识别 - 调用智谱GLM-4V API
+async function extractFromImage(imagePath, documentType) {
     try {
-        console.log('=== 开始文档识别 ===');
-        console.log('文件路径:', imagePath);
+        console.log('=== 开始OCR识别 ===');
+        console.log('图片路径:', imagePath);
         console.log('文档类型:', documentType);
 
-        // 检测文件类型
-        const ext = path.extname(imagePath).toLowerCase();
-        const mimeType = getMimeType(ext);
-
-        console.log('检测到文件类型:', ext, mimeType);
-
-        // 对于PDF、Word、Excel文档，先提取文本内容
-        if (ext === '.pdf') {
-            return await extractFromPDF(imagePath, documentType);
-        } else if (ext === '.docx' || ext === '.doc') {
-            return await extractFromWord(imagePath, documentType);
-        } else if (ext === '.xlsx' || ext === '.xls') {
-            return await extractFromExcel(imagePath, documentType);
-        }
-
-        // 图片文件使用OCR识别
         const apiKey = process.env.ZHIPU_API_KEY;
         console.log('API Key存在:', !!apiKey);
         if (!apiKey) {
@@ -52,8 +132,8 @@ async function extractMedicalData(imagePath, documentType) {
         // 读取图片并转换为base64
         const imageBuffer = fs.readFileSync(imagePath);
         const base64Image = imageBuffer.toString('base64');
-        const imgMimeType = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-        console.log('图片大小:', imageBuffer.length, 'bytes');
+        const mimeType = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+        console.log('文件大小:', imageBuffer.length, 'bytes');
 
         // 构建请求
         const requestBody = {
@@ -198,118 +278,10 @@ function parseTextResponse(content, documentType) {
     return result;
 }
 
-// 获取MIME类型
-function getMimeType(ext) {
-    const mimeTypes = {
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.pdf': 'application/pdf',
-        '.doc': 'application/msword',
-        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.xls': 'application/vnd.ms-excel',
-        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    };
-    return mimeTypes[ext] || 'application/octet-stream';
-}
-
-// 从PDF提取文本
-async function extractFromPDF(filePath, documentType) {
-    try {
-        loadLibs();
-        if (!pdfParse) {
-            return {
-                success: false,
-                error: 'PDF解析库未安装'
-            };
-        }
-        const dataBuffer = fs.readFileSync(filePath);
-        const data = await pdfParse(dataBuffer);
-
-        return {
-            success: true,
-            data: {
-                fullContent: data.text,
-                type: documentType || 'PDF文档'
-            },
-            confidence: 'high'
-        };
-    } catch (error) {
-        console.error('PDF提取失败:', error);
-        return {
-            success: false,
-            error: 'PDF解析失败: ' + error.message
-        };
-    }
-}
-
-// 从Word提取文本
-async function extractFromWord(filePath, documentType) {
-    try {
-        loadLibs();
-        if (!mammoth) {
-            return {
-                success: false,
-                error: 'Word解析库未安装'
-            };
-        }
-        const dataBuffer = fs.readFileSync(filePath);
-        const result = await mammoth.extractRawText({ buffer: dataBuffer });
-
-        return {
-            success: true,
-            data: {
-                fullContent: result.value,
-                type: documentType || 'Word文档'
-            },
-            confidence: 'high'
-        };
-    } catch (error) {
-        console.error('Word提取失败:', error);
-        return {
-            success: false,
-            error: 'Word文档解析失败: ' + error.message
-        };
-    }
-}
-
-// 从Excel提取数据
-async function extractFromExcel(filePath, documentType) {
-    try {
-        loadLibs();
-        if (!xlsx) {
-            return {
-                success: false,
-                error: 'Excel解析库未安装'
-            };
-        }
-        const workbook = xlsx.readFile(filePath);
-        let fullContent = '';
-
-        // 遍历所有工作表
-        workbook.SheetNames.forEach(sheetName => {
-            const worksheet = workbook.Sheets[sheetName];
-            const sheetData = xlsx.utils.sheet_to_csv(worksheet, { header: 1 });
-            fullContent += `### 工作表: ${sheetName}\n${sheetData}\n\n`;
-        });
-
-        return {
-            success: true,
-            data: {
-                fullContent: fullContent,
-                type: documentType || 'Excel表格'
-            },
-            confidence: 'high'
-        };
-    } catch (error) {
-        console.error('Excel提取失败:', error);
-        return {
-            success: false,
-            error: 'Excel解析失败: ' + error.message
-        };
-    }
-}
-
 module.exports = {
-    extractMedicalData
+    extractMedicalData,
+    getFileType,
+    extractPDF,
+    extractWord,
+    extractExcel
 };
