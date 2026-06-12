@@ -14,31 +14,39 @@ function requireAuth(req, res, next) {
     }
 }
 
-// POST /api/medical/upload - 上传医疗图片
+// POST /api/medical/upload - 上传医疗文件（支持批量）
 router.post('/upload', (req, res, next) => {
-    console.log('=== 图片上传请求 ===');
+    console.log('=== 文件上传请求 ===');
     console.log('Session auth:', req.session?.authenticated);
     console.log('Headers:', req.headers['content-type']);
 
     // 临时禁用认证用于测试
     // requireAuth(req, res, next);
     next();
-}, upload.single('image'), (req, res) => {
+}, upload.array('files', 20), (req, res) => {
     console.log('=== Multer 处理后 ===');
-    console.log('请求文件:', req.file);
+    console.log('请求文件数量:', req.files?.length || 0);
     console.log('请求体:', req.body);
 
-    if (!req.file) {
+    if (!req.files || req.files.length === 0) {
         console.error('上传失败: 未上传文件');
-        console.error('Multer 错误信息 (可能存在于 req):');
         return res.status(400).json({ success: false, message: '未上传文件' });
     }
 
+    // 处理多个文件
+    const files = req.files.map(file => ({
+        imageId: file.filename,
+        filePath: `/data/uploads/${file.filename}`,
+        originalName: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+    }));
+
     const response = {
         success: true,
-        imageId: req.file.filename,
-        filePath: `/data/uploads/${req.file.filename}`,
-        message: '上传成功'
+        files: files,
+        count: files.length,
+        message: files.length > 1 ? `成功上传 ${files.length} 个文件` : '上传成功'
     };
     console.log('上传响应:', response);
     res.json(response);

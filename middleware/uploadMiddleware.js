@@ -38,16 +38,27 @@ const storage = multer.diskStorage({
     }
 });
 
-// 文件过滤
+// 文件过滤 - 支持图片、PDF、Word、Excel
 const fileFilter = (req, file, cb) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg'];
-    const allowedExts = ['.jpg', '.jpeg', '.png'];
+    const allowedMimes = [
+        // 图片
+        'image/jpeg', 'image/png', 'image/jpg',
+        // PDF
+        'application/pdf',
+        // Word
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        // Excel
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.pdf', '.doc', '.docx', '.xls', '.xlsx'];
 
     const ext = path.extname(file.originalname).toLowerCase();
-    if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
+    if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
         cb(null, true);
     } else {
-        cb(new Error('仅支持JPG和PNG格式的图片'), false);
+        cb(new Error('不支持的文件格式，仅支持图片（JPG/PNG）、PDF、Word（.doc/.docx）和Excel（.xls/.xlsx）'), false);
     }
 };
 
@@ -56,7 +67,8 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB限制
+        fileSize: 50 * 1024 * 1024, // 50MB限制 - 支持较大的文档文件
+        files: 20 // 最多20个文件
     }
 });
 
