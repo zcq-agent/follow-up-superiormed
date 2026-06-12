@@ -1,9 +1,19 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
-const pdfParse = require('pdf-parse');
-const xlsx = require('xlsx');
-const mammoth = require('mammoth');
+
+// 懒加载文档处理库（避免启动时崩溃）
+let pdfParse, xlsx, mammoth;
+
+function loadLibs() {
+    try {
+        if (!pdfParse) pdfParse = require('pdf-parse');
+        if (!xlsx) xlsx = require('xlsx');
+        if (!mammoth) mammoth = require('mammoth');
+    } catch (error) {
+        console.error('加载文档处理库失败:', error.message);
+    }
+}
 
 // 调用智谱GLM-4V API
 async function extractMedicalData(imagePath, documentType) {
@@ -206,6 +216,13 @@ function getMimeType(ext) {
 // 从PDF提取文本
 async function extractFromPDF(filePath, documentType) {
     try {
+        loadLibs();
+        if (!pdfParse) {
+            return {
+                success: false,
+                error: 'PDF解析库未安装'
+            };
+        }
         const dataBuffer = fs.readFileSync(filePath);
         const data = await pdfParse(dataBuffer);
 
@@ -229,6 +246,13 @@ async function extractFromPDF(filePath, documentType) {
 // 从Word提取文本
 async function extractFromWord(filePath, documentType) {
     try {
+        loadLibs();
+        if (!mammoth) {
+            return {
+                success: false,
+                error: 'Word解析库未安装'
+            };
+        }
         const dataBuffer = fs.readFileSync(filePath);
         const result = await mammoth.extractRawText({ buffer: dataBuffer });
 
@@ -252,6 +276,13 @@ async function extractFromWord(filePath, documentType) {
 // 从Excel提取数据
 async function extractFromExcel(filePath, documentType) {
     try {
+        loadLibs();
+        if (!xlsx) {
+            return {
+                success: false,
+                error: 'Excel解析库未安装'
+            };
+        }
         const workbook = xlsx.readFile(filePath);
         let fullContent = '';
 
