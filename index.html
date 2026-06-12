@@ -144,6 +144,50 @@
             color: rgba(255, 255, 255, 0.3);
             font-size: 13px;
         }
+        /* 文件预览样式 */
+        .file-preview {
+            width: 100%;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .file-preview:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+        .file-icon {
+            font-size: 48px;
+        }
+        .file-name {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        /* 复制按钮样式 */
+        .copy-btn:hover {
+            background: rgba(0, 255, 255, 0.25) !important;
+            border-color: rgba(0, 255, 255, 0.6) !important;
+        }
+        /* 识别结果卡片样式 */
+        .recognition-result-card {
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
         /* 图片模态框样式 */
         .image-modal {
             display: none;
@@ -283,10 +327,13 @@
         <!-- 已上传的文件 -->
         <div class="card">
             <div class="uploaded-images">
-                <div class="images-title">📄 最近上传的文件</div>
+                <div class="images-title">📄 最近上传的文件（点击文件查看识别内容）</div>
                 <div class="images-list" id="uploadedImagesList"></div>
             </div>
         </div>
+
+        <!-- 识别内容展示区域 -->
+        <div id="recognitionResultsArea"></div>
 
         <div class="card">
             <div class="card-header">

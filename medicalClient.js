@@ -256,7 +256,7 @@ async function handleUpload() {
 
                 // 如果只有一个文件，显示识别结果
                 if (uploadedFiles.length === 1 && extractedData) {
-                    displayExtractionResult(extractedData, 'high', uploadedFile.filePath);
+                    displayExtractionResult(extractedData, 'high', uploadedFile.filePath, fileInfo.id);
                 }
 
             } catch (error) {
@@ -292,15 +292,22 @@ function showStatus(element, message, type) {
 }
 
 // 直接在页面显示识别结果（按照用户要求的格式）
-function displayExtractionResult(data, confidence, imagePath) {
+function displayExtractionResult(data, confidence, imagePath, fileId = null) {
+    const resultsArea = document.getElementById('recognitionResultsArea');
+
     let resultHtml = `
-        <div class="card" style="margin-top: 20px; border-color: rgba(0, 255, 255, 0.4);">
-            <h3 style="color: #00ffff; margin-bottom: 16px;">
-                📋 医学数据识别结果
-                <span style="font-size: 12px; color: rgba(0, 255, 255, 0.6);">
-                    (文档类型: ${data.type || '未知'} | 置信度: ${confidence === 'high' ? '高' : confidence === 'medium' ? '中' : '低'})
-                </span>
-            </h3>
+        <div class="card recognition-result-card" ${fileId ? `data-file-id="${fileId}"` : ''} style="margin-top: 20px; border-color: rgba(0, 255, 255, 0.4);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="color: #00ffff; margin: 0;">
+                    📋 医学数据识别结果
+                    <span style="font-size: 12px; color: rgba(0, 255, 255, 0.6); margin-left: 10px;">
+                        (文档类型: ${data.type || '未知'} | 置信度: ${confidence === 'high' ? '高' : confidence === 'medium' ? '中' : '低'})
+                    </span>
+                </h3>
+                <button onclick="copyRecognitionContent(this)" class="copy-btn" style="padding: 8px 16px; background: rgba(0, 255, 255, 0.15); border: 1px solid rgba(0, 255, 255, 0.4); border-radius: 8px; color: #00ffff; cursor: pointer; font-size: 12px; transition: all 0.2s ease;">
+                    📋 复制内容
+                </button>
+            </div>
     `;
 
     // 原图查看部分
@@ -322,12 +329,14 @@ function displayExtractionResult(data, confidence, imagePath) {
     if (data.fullContent) {
         resultHtml += `
             <div style="margin-bottom: 20px;">
-                <h4 style="color: rgba(0, 255, 255, 0.8); font-size: 14px; margin-bottom: 12px;">### 完整医学数据内容（逐字提取）</h4>
-                <div style="background: rgba(0, 0, 0, 0.3); padding: 16px; border-radius: 8px; border: 1px solid rgba(0, 255, 255, 0.3); max-height: 600px; overflow-y: auto; font-size: 13px; color: rgba(255,255,255,0.85); white-space: pre-wrap; word-break: break-word; line-height: 1.8;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h4 style="color: rgba(0, 255, 255, 0.8); font-size: 14px; margin: 0;">### 完整医学数据内容（逐字提取）</h4>
+                </div>
+                <div class="recognition-content" style="background: rgba(0, 0, 0, 0.3); padding: 16px; border-radius: 8px; border: 1px solid rgba(0, 255, 255, 0.3); max-height: 600px; overflow-y: auto; font-size: 13px; color: rgba(255,255,255,0.85); white-space: pre-wrap; word-break: break-word; line-height: 1.8; user-select: text;">
 ${escapeHtml(data.fullContent)}
                 </div>
                 <div style="margin-top: 12px; padding: 12px; background: rgba(0, 255, 255, 0.1); border-radius: 8px; font-size: 12px; color: rgba(0, 255, 255, 0.7);">
-                    <strong>自我检查结果：</strong><br>
+                    <strong>识别质量确认：</strong><br>
                     ✓ 已确保每个字符（包括单位如umol/L、U/L和参考范围）与图片完全一致<br>
                     ✓ 没有任何遗漏或修改<br>
                     ✓ 保持原始格式和排版
@@ -338,17 +347,56 @@ ${escapeHtml(data.fullContent)}
 
     resultHtml += `</div>`;
 
-    // 插入到页面
-    const existingResult = document.getElementById('medical-result');
-    if (existingResult) {
-        existingResult.remove();
+    // 添加到结果区域
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = resultHtml;
+    const newResult = tempDiv.firstChild;
+
+    // 如果是更新现有结果，替换它
+    if (fileId) {
+        const existingResult = resultsArea.querySelector(`[data-file-id="${fileId}"]`);
+        if (existingResult) {
+            existingResult.replaceWith(newResult);
+        } else {
+            resultsArea.appendChild(newResult);
+        }
+    } else {
+        // 移除旧的临时结果
+        const oldResult = resultsArea.querySelector('.recognition-result-card:not([data-file-id])');
+        if (oldResult) oldResult.remove();
+        resultsArea.appendChild(newResult);
     }
+}
 
-    const resultContainer = document.createElement('div');
-    resultContainer.id = 'medical-result';
-    resultContainer.innerHTML = resultHtml;
+// 复制识别内容
+function copyRecognitionContent(button) {
+    const card = button.closest('.recognition-result-card');
+    const contentDiv = card.querySelector('.recognition-content');
 
-    document.querySelector('.container').appendChild(resultContainer);
+    if (contentDiv) {
+        // 获取纯文本内容
+        const text = contentDiv.textContent;
+
+        // 复制到剪贴板
+        navigator.clipboard.writeText(text).then(() => {
+            // 显示复制成功反馈
+            const originalText = button.innerHTML;
+            button.innerHTML = '✅ 已复制';
+            button.style.background = 'rgba(0, 255, 0, 0.2)';
+            button.style.borderColor = 'rgba(0, 255, 0, 0.4)';
+            button.style.color = '#00ff00';
+
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.background = 'rgba(0, 255, 255, 0.15)';
+                button.style.borderColor = 'rgba(0, 255, 255, 0.4)';
+                button.style.color = '#00ffff';
+            }, 2000);
+        }).catch(err => {
+            console.error('复制失败:', err);
+            alert('复制失败，请手动选择内容复制');
+        });
+    }
 }
 
 // HTML转义函数
@@ -363,25 +411,58 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-// 渲染已上传的图片列表
+// 渲染已上传的文件列表
 function renderUploadedImages() {
     const imagesList = document.getElementById('uploadedImagesList');
 
     if (!uploadedImages || uploadedImages.length === 0) {
-        imagesList.innerHTML = '<div class="no-uploaded-images">暂无上传的图片</div>';
+        imagesList.innerHTML = '<div class="no-uploaded-images">暂无上传的文件</div>';
         return;
     }
 
-    imagesList.innerHTML = uploadedImages.map(image => `
+    imagesList.innerHTML = uploadedImages.map(file => {
+        // 根据文件类型选择图标和预览方式
+        const fileIcon = getFileIcon(file.originalName || file.filePath);
+        const hasExtractedData = file.extractedData && file.extractedData.fullContent;
+
+        return `
         <div class="image-item">
-            <button class="delete-image-btn" onclick="deleteUploadedImage(${image.id})" title="删除图片">×</button>
-            <img src="${image.filePath}" alt="${image.documentType}" onclick="viewUploadedImage('${image.filePath}', '${image.documentType}')">
+            <button class="delete-image-btn" onclick="deleteUploadedImage(${file.id})" title="删除文件">×</button>
+            <div class="file-preview" onclick="viewUploadedImage('${file.filePath}', '${file.documentType}', ${file.id})">
+                <div class="file-icon">${fileIcon}</div>
+            </div>
             <div class="image-info">
-                <div class="image-type">${image.documentType}</div>
-                <div class="image-time">${formatUploadTime(image.uploadTime)}</div>
+                <div class="image-type">
+                    ${file.documentType}
+                    ${hasExtractedData ? '<span style="color: #00ffff;"> ✓ 已识别</span>' : ''}
+                </div>
+                <div class="image-time">${formatUploadTime(file.uploadTime)}</div>
+                <div class="file-name" title="${file.originalName || '文件'}">${truncateFileName(file.originalName || '文件')}</div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
+}
+
+// 获取文件类型图标
+function getFileIcon(fileName) {
+    const ext = fileName.split('.').pop().toLowerCase();
+    const icons = {
+        'pdf': '📄',
+        'doc': '📝',
+        'docx': '📝',
+        'xls': '📊',
+        'xlsx': '📊',
+        'jpg': '🖼️',
+        'jpeg': '🖼️',
+        'png': '🖼️'
+    };
+    return icons[ext] || '📁';
+}
+
+// 截断文件名
+function truncateFileName(fileName, maxLength = 20) {
+    if (fileName.length <= maxLength) return fileName;
+    return fileName.substring(0, maxLength - 3) + '...';
 }
 
 // 格式化上传时间
@@ -401,14 +482,27 @@ function formatUploadTime(timeStr) {
     }
 }
 
-// 查看上传的图片（使用模态框）
-function viewUploadedImage(filePath, documentType) {
+// 查看上传的文件（使用模态框或显示识别内容）
+function viewUploadedImage(filePath, documentType, fileId = null) {
+    // 如果有 fileId，尝试显示识别内容
+    if (fileId) {
+        const file = uploadedImages.find(f => f.id === fileId);
+        if (file && file.extractedData && file.extractedData.fullContent) {
+            // 显示识别结果
+            displayExtractionResult(file.extractedData, 'high', filePath, fileId);
+            // 滚动到结果区域
+            document.getElementById('recognitionResultsArea').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            return;
+        }
+    }
+
+    // 否则显示图片/文件预览
     const modal = document.getElementById('imageModal');
     const modalImage = document.getElementById('modalImage');
     const modalImageInfo = document.getElementById('modalImageInfo');
 
     modalImage.src = filePath;
-    modalImageInfo.textContent = documentType || '医疗图片';
+    modalImageInfo.textContent = documentType || '文件';
     modal.classList.add('active');
 
     // 阻止页面滚动
