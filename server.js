@@ -428,20 +428,38 @@ function checkReminders() {
     });
 }
 
-// 每分钟检查一次提醒
-cron.schedule('* * * * *', () => {
-    console.log('检查提醒...', new Date().toLocaleString('zh-CN'));
-    checkReminders();
-});
-
 // 导出 app 以供外部使用
 module.exports = app;
 
 // 如果直接运行此文件，则启动服务器
 if (require.main === module) {
     const PORT = process.env.PORT || 3000;
-    app.listen(PORT, '0.0.0.0', () => {
+
+    // 每分钟检查一次提醒（只在服务器启动时启动）
+    cron.schedule('* * * * *', () => {
+        console.log('检查提醒...', new Date().toLocaleString('zh-CN'));
+        checkReminders();
+    });
+
+    const server = app.listen(PORT, '0.0.0.0', () => {
         console.log(`服务运行在端口 ${PORT}`);
         console.log(`默认密码: ${ADMIN_PASSWORD} (请在环境变量中设置 ADMIN_PASSWORD 修改)`);
+    });
+
+    // 优雅关闭
+    process.on('SIGTERM', () => {
+        console.log('⚠️  SIGTERM received, shutting down gracefully...');
+        server.close(() => {
+            console.log('✅ Server closed');
+            process.exit(0);
+        });
+    });
+
+    process.on('SIGINT', () => {
+        console.log('⚠️  SIGINT received, shutting down...');
+        server.close(() => {
+            console.log('✅ Server closed');
+            process.exit(0);
+        });
     });
 }
