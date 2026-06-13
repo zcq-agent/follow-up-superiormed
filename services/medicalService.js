@@ -1,9 +1,29 @@
 const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
-const pdfParse = require('pdf-parse');
-const XLSX = require('xlsx');
-const mammoth = require('mammoth');
+
+// 尝试加载依赖库，如果失败则标记为不可用
+let pdfParse = null;
+let XLSX = null;
+let mammoth = null;
+
+try {
+    pdfParse = require('pdf-parse');
+} catch (e) {
+    console.warn('⚠️  pdf-parse not available:', e.message);
+}
+
+try {
+    XLSX = require('xlsx');
+} catch (e) {
+    console.warn('⚠️  xlsx not available:', e.message);
+}
+
+try {
+    mammoth = require('mammoth');
+} catch (e) {
+    console.warn('⚠️  mammoth not available:', e.message);
+}
 
 // 检测文件类型
 function getFileType(filePath) {
@@ -23,6 +43,9 @@ function getFileType(filePath) {
 
 // 提取PDF文本
 async function extractPDF(filePath) {
+    if (!pdfParse) {
+        throw new Error('PDF解析功能不可用（pdf-parse库未正确安装）');
+    }
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdfParse(dataBuffer);
     return data.text;
@@ -30,12 +53,18 @@ async function extractPDF(filePath) {
 
 // 提取Word文本
 async function extractWord(filePath) {
+    if (!mammoth) {
+        throw new Error('Word解析功能不可用（mammoth库未正确安装）');
+    }
     const result = await mammoth.extractRawText({ path: filePath });
     return result.value;
 }
 
 // 提取Excel文本
 async function extractExcel(filePath) {
+    if (!XLSX) {
+        throw new Error('Excel解析功能不可用（xlsx库未正确安装）');
+    }
     const workbook = XLSX.readFile(filePath);
     let fullText = '';
 
