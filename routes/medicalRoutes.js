@@ -54,11 +54,18 @@ router.post('/upload', (req, res, next) => {
 // POST /api/medical/extract - 识别医疗数据
 router.post('/extract', (req, res, next) => {
     // 临时禁用认证
+    console.log('=== 收到识别请求 ===');
+    console.log('请求体:', req.body);
     next();
 }, async (req, res) => {
     const { imageId, documentType } = req.body;
 
+    console.log('=== 开始处理识别请求 ===');
+    console.log('imageId:', imageId);
+    console.log('documentType:', documentType);
+
     if (!imageId || !documentType) {
+        console.log('❌ 缺少参数');
         return res.status(400).json({
             success: false,
             message: '缺少imageId或documentType参数'
@@ -67,16 +74,19 @@ router.post('/extract', (req, res, next) => {
 
     try {
         const imagePath = path.join(__dirname, '../data/uploads', imageId);
+        console.log('图片路径:', imagePath);
 
         if (!fs.existsSync(imagePath)) {
+            console.log('❌ 图片不存在');
             return res.status(404).json({
                 success: false,
                 message: '图片不存在'
             });
         }
 
-        console.log(`开始识别医疗数据: ${imageId}, 类型: ${documentType}`);
+        console.log(`✅ 开始识别医疗数据: ${imageId}, 类型: ${documentType}`);
         const result = await extractMedicalData(imagePath, documentType);
+        console.log('识别结果:', result.success ? '成功' : '失败');
 
         if (result.success) {
             res.json({
@@ -86,14 +96,15 @@ router.post('/extract', (req, res, next) => {
                 message: '识别成功'
             });
         } else {
+            console.log('❌ 识别失败:', result.error);
             res.status(500).json({
                 success: false,
                 message: '识别失败: ' + result.error
             });
         }
     } catch (error) {
-        console.error('API错误:', error);
-        console.error('错误堆栈:', error.stack);
+        console.error('❌ API错误:', error);
+        console.error('❌ 错误堆栈:', error.stack);
         res.status(500).json({
             success: false,
             message: '服务器错误: ' + error.message,
