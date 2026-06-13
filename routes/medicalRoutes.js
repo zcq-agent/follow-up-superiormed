@@ -93,9 +93,11 @@ router.post('/extract', (req, res, next) => {
         }
     } catch (error) {
         console.error('API错误:', error);
+        console.error('错误堆栈:', error.stack);
         res.status(500).json({
             success: false,
-            message: '服务器错误: ' + error.message
+            message: '服务器错误: ' + error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });

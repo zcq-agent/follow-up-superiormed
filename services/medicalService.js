@@ -153,7 +153,7 @@ async function extractFromImage(imagePath, documentType) {
             console.error('ZHIPU_API_KEY 未配置');
             return {
                 success: false,
-                error: 'ZHIPU_API_KEY 未配置',
+                error: 'ZHIPU_API_KEY 未配置，请在 Railway 环境变量中设置',
                 data: null
             };
         }
