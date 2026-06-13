@@ -130,6 +130,16 @@ router.post('/confirm', requireAuth, (req, res) => {
     }
 });
 
+// GET /api/medical/test-env - 测试环境变量配置（调试用）
+router.get('/test-env', (req, res) => {
+    res.json({
+        ZHIPU_API_KEY_CONFIGURED: !!process.env.ZHIPU_API_KEY,
+        SEND_KEY_CONFIGURED: !!process.env.SEND_KEY,
+        ADMIN_PASSWORD_CONFIGURED: !!process.env.ADMIN_PASSWORD,
+        NODE_ENV: process.env.NODE_ENV || 'undefined'
+    });
+});
+
 // DELETE /api/medical/:imageId - 删除上传的图片
 router.delete('/:imageId', requireAuth, (req, res) => {
     const { imageId } = req.params;
