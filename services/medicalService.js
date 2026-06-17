@@ -45,40 +45,22 @@ function getFileType(filePath) {
     return result;
 }
 
-// 提取PDF文本
+// 提取PDF文本 - 使用智谱 API 进行 PDF 识别
 async function extractPDF(filePath) {
-    if (!pdfParse) {
-        throw new Error('PDF解析功能不可用（pdf-parse库未正确安装）');
-    }
-    const dataBuffer = fs.readFileSync(filePath);
-    const data = await pdfParse(dataBuffer);
-    return data.text;
+    console.log('使用智谱 API 进行 PDF 识别');
+    return await extractFromImage(filePath, 'PDF文档');
 }
 
-// 提取Word文本
+// 提取Word文本 - 使用智谱 API 进行 Word 识别
 async function extractWord(filePath) {
-    if (!mammoth) {
-        throw new Error('Word解析功能不可用（mammoth库未正确安装）');
-    }
-    const result = await mammoth.extractRawText({ path: filePath });
-    return result.value;
+    console.log('使用智谱 API 进行 Word 识别');
+    return await extractFromImage(filePath, 'Word文档');
 }
 
-// 提取Excel文本
+// 提取Excel文本 - 使用智谱 API 进行 Excel 识别
 async function extractExcel(filePath) {
-    if (!XLSX) {
-        throw new Error('Excel解析功能不可用（xlsx库未正确安装）');
-    }
-    const workbook = XLSX.readFile(filePath);
-    let fullText = '';
-
-    workbook.SheetNames.forEach(sheetName => {
-        const worksheet = workbook.Sheets[sheetName];
-        const sheetText = XLSX.utils.sheet_to_txt(worksheet);
-        fullText += `=== ${sheetName} ===\n${sheetText}\n\n`;
-    });
-
-    return fullText;
+    console.log('使用智谱 API 进行 Excel 识别');
+    return await extractFromImage(filePath, 'Excel表格');
 }
 
 // 调用智谱GLM-4V API - 统一的文档数据提取入口
@@ -195,11 +177,11 @@ async function extractMedicalData(filePath, documentType) {
     }
 }
 
-// 图片OCR识别 - 调用智谱GLM-4V API
+// 图片OCR识别 - 调用智谱GLM-4V API（支持图片、PDF、Word、Excel）
 async function extractFromImage(imagePath, documentType) {
     try {
-        console.log('=== 开始OCR识别 ===');
-        console.log('图片路径:', imagePath);
+        console.log('=== 开始多模态识别 ===');
+        console.log('文件路径:', imagePath);
         console.log('文档类型:', documentType);
 
         const apiKey = process.env.ZHIPU_API_KEY;
@@ -213,11 +195,36 @@ async function extractFromImage(imagePath, documentType) {
             };
         }
 
-        // 读取图片并转换为base64
-        const imageBuffer = fs.readFileSync(imagePath);
-        const base64Image = imageBuffer.toString('base64');
-        const mimeType = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-        console.log('文件大小:', imageBuffer.length, 'bytes');
+        // 读取文件并转换为base64
+        const fileBuffer = fs.readFileSync(imagePath);
+        const base64File = fileBuffer.toString('base64');
+
+        // 根据文件扩展名确定 MIME 类型
+        const ext = path.extname(imagePath).toLowerCase();
+        let mimeType;
+        switch (ext) {
+            case '.pdf':
+                mimeType = 'application/pdf';
+                break;
+            case '.jpg':
+            case '.jpeg':
+                mimeType = 'image/jpeg';
+                break;
+            case '.png':
+                mimeType = 'image/png';
+                break;
+            case '.docx':
+                mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+                break;
+            case '.xlsx':
+                mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+                break;
+            default:
+                mimeType = 'image/jpeg'; // 默认
+        }
+
+        console.log('文件类型:', mimeType);
+        console.log('文件大小:', fileBuffer.length, 'bytes');
 
         // 构建请求
         const requestBody = {
@@ -225,16 +232,17 @@ async function extractFromImage(imagePath, documentType) {
             messages: [
                 {
                     role: 'system',
-                    content: `你是一个严格的专业OCR文字识别系统。你的唯一任务是从图片中识别文字，并严格按照原始格式输出。
+                    content: `你是一个严格的专业文档文字识别系统。你的唯一任务是从文档（图片、PDF、Word、Excel等）中识别文字，并严格按照原始格式输出。
 
 【严格要求】：
-1. 完全保留图片中的所有文字、数字、符号，不得遗漏任何内容
-2. 保持文字在图片中的原始位置和顺序，不得重新排列
-3. 保留原始的格式（换行、空格、缩进等），不得添加或删除
+1. 完全保留文档中的所有文字、数字、符号，不得遗漏任何内容
+2. 保持文字在文档中的原始位置和顺序，不得重新排列
+3. 保留原始的格式（换行、空格、缩进、表格结构等），不得添加或删除
 4. 绝对禁止对内容进行任何分析、解释、总结、归纳或评论
 5. 绝对禁止修改任何数值、单位、日期等
 6. 即使遇到看似错误或不合理的内容，也必须原样输出，不得"修正"
-7. 输出的内容必须与图片中显示的一模一样，就像复印一样
+7. 输出的内容必须与文档中显示的一模一样，就像复印一样
+8. 对于表格，保持表格结构和内容完整
 
 【输出格式】：
 直接输出识别的所有文字内容，保持原始排版和格式，不要添加任何前后缀说明。`
@@ -245,19 +253,19 @@ async function extractFromImage(imagePath, documentType) {
                         {
                             type: 'image_url',
                             image_url: {
-                                url: `data:${mimeType};base64,${base64Image}`
+                                url: `data:${mimeType};base64,${base64File}`
                             }
                         },
                         {
                             type: 'text',
-                            text: '请严格按照原始格式识别图片中的所有文字、数字、符号。不要遗漏任何内容，不要修改任何数值，不要添加任何分析或总结。直接输出识别的原始内容。'
+                            text: '请严格按照原始格式识别文档中的所有文字、数字、符号。不要遗漏任何内容，不要修改任何数值，不要添加任何分析或总结。直接输出识别的原始内容。'
                         }
                     ]
                 }
             ],
             top_p: 0.1,
             temperature: 0.01,
-            max_tokens: 2048
+            max_tokens: 4096  // 增加最大token数以支持更长的文档
         };
 
         // 调用API
