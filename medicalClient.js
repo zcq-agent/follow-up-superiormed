@@ -307,7 +307,14 @@ function showStatus(element, message, type) {
 
 // 直接在页面显示识别结果（按照用户要求的格式）
 function displayExtractionResult(data, confidence, imagePath, fileId = null) {
+    console.log('=== displayExtractionResult 被调用 ===');
+    console.log('data:', data);
+    console.log('confidence:', confidence);
+    console.log('imagePath:', imagePath);
+    console.log('fileId:', fileId);
+
     const resultsArea = document.getElementById('recognitionResultsArea');
+    console.log('resultsArea 元素:', resultsArea);
 
     let resultHtml = `
         <div class="card recognition-result-card" ${fileId ? `data-file-id="${fileId}"` : ''} style="margin-top: 20px; border-color: rgba(0, 255, 255, 0.4);">
