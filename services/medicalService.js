@@ -265,7 +265,7 @@ async function extractFromImage(imagePath, documentType) {
             ],
             top_p: 0.1,
             temperature: 0.01,
-            max_tokens: 4096  // 增加最大token数以支持更长的文档
+            max_tokens: 2000  // 智谱 API 限制为 [1, 2048]
         };
 
         // 调用API
