@@ -74,7 +74,11 @@ router.post('/extract', (req, res, next) => {
 
     try {
         const imagePath = path.join(__dirname, '../data/uploads', imageId);
+        console.log('=== 识别请求调试信息 ===');
+        console.log('imageId:', imageId);
+        console.log('imageId 类型:', typeof imageId);
         console.log('图片路径:', imagePath);
+        console.log('图片扩展名:', path.extname(imageId));
 
         if (!fs.existsSync(imagePath)) {
             console.log('❌ 图片不存在');
