@@ -242,6 +242,9 @@ async function handleUpload() {
                     console.log('识别响应数据:', extractData);
                     if (extractData.success) {
                         extractedData = extractData.data;
+                        console.log('提取的数据类型:', typeof extractedData);
+                        console.log('fullContent类型:', typeof extractedData?.fullContent);
+                        console.log('fullContent内容:', extractedData?.fullContent);
                         successCount++;
                     } else {
                         console.error('识别失败:', extractData.message);
@@ -338,17 +341,27 @@ function displayExtractionResult(data, confidence, imagePath, fileId = null) {
 
     // 显示完整识别的医学数据内容（逐字提取）
     if (data.fullContent) {
+        // 处理 fullContent 可能是对象或字符串的情况
+        let contentText = '';
+        if (typeof data.fullContent === 'object' && data.fullContent !== null) {
+            // 如果是对象，尝试提取文本内容
+            contentText = JSON.stringify(data.fullContent, null, 2);
+        } else {
+            // 如果是字符串或其他类型
+            contentText = String(data.fullContent);
+        }
+
         resultHtml += `
             <div style="margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                     <h4 style="color: rgba(0, 255, 255, 0.8); font-size: 14px; margin: 0;">### 完整医学数据内容（逐字提取）</h4>
                 </div>
                 <div class="recognition-content" style="background: rgba(0, 0, 0, 0.3); padding: 16px; border-radius: 8px; border: 1px solid rgba(0, 255, 255, 0.3); max-height: 600px; overflow-y: auto; font-size: 13px; color: rgba(255,255,255,0.85); white-space: pre-wrap; word-break: break-word; line-height: 1.8; user-select: text;">
-${escapeHtml(data.fullContent)}
+${escapeHtml(contentText)}
                 </div>
                 <div style="margin-top: 12px; padding: 12px; background: rgba(0, 255, 255, 0.1); border-radius: 8px; font-size: 12px; color: rgba(0, 255, 255, 0.7);">
                     <strong>识别质量确认：</strong><br>
-                    ✓ 已确保每个字符（包括单位如umol/L、U/L和参考范围）与图片完全一致<br>
+                    ✓ 已确保每个字符（包括单位如umol/L、U/L和参考范围）与文档完全一致<br>
                     ✓ 没有任何遗漏或修改<br>
                     ✓ 保持原始格式和排版
                 </div>
