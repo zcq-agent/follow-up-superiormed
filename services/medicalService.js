@@ -131,7 +131,10 @@ async function extractMedicalData(filePath, documentType) {
         };
 
     } catch (error) {
-        console.error('文档数据提取失败:', error);
+        console.error('=== 文档数据提取失败 ===');
+        console.error('错误类型:', error.name);
+        console.error('错误消息:', error.message);
+        console.error('错误堆栈:', error.stack);
         return {
             success: false,
             error: error.message || '未知错误',
@@ -269,7 +272,10 @@ async function extractFromImage(imagePath, documentType) {
         };
 
     } catch (error) {
-        console.error('医疗数据提取失败:', error);
+        console.error('=== 图片OCR识别失败 ===');
+        console.error('错误类型:', error.name);
+        console.error('错误消息:', error.message);
+        console.error('错误堆栈:', error.stack);
         return {
             success: false,
             error: error.message || '未知错误',
