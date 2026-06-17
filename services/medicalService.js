@@ -28,6 +28,8 @@ try {
 // 检测文件类型
 function getFileType(filePath) {
     const ext = path.extname(filePath).toLowerCase();
+    console.log('getFileType - filePath:', filePath);
+    console.log('getFileType - ext:', ext);
     const mimeTypes = {
         '.pdf': 'pdf',
         '.doc': 'word',
@@ -38,7 +40,9 @@ function getFileType(filePath) {
         '.jpeg': 'image',
         '.png': 'image'
     };
-    return mimeTypes[ext] || 'unknown';
+    const result = mimeTypes[ext] || 'unknown';
+    console.log('getFileType - result:', result);
+    return result;
 }
 
 // 提取PDF文本
