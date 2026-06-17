@@ -151,6 +151,50 @@ router.get('/test-env', (req, res) => {
     });
 });
 
+// GET /api/medical/test-file-type - 测试文件类型检测（调试用）
+router.get('/test-file-type', (req, res) => {
+    const path = require('path');
+    const testFiles = [
+        'test.png',
+        'test.jpg',
+        'test.pdf',
+        'test.docx',
+        '2026-06-13T08-34-48-123Z-abc12345.png'
+    ];
+
+    const results = testFiles.map(file => {
+        const ext = path.extname(file).toLowerCase();
+        const mimeTypes = {
+            '.pdf': 'pdf',
+            '.doc': 'word',
+            '.docx': 'word',
+            '.xls': 'excel',
+            '.xlsx': 'excel',
+            '.jpg': 'image',
+            '.jpeg': 'image',
+            '.png': 'image'
+        };
+        return {
+            file: file,
+            ext: ext,
+            detectedType: mimeTypes[ext] || 'unknown'
+        };
+    });
+
+    res.json({
+        message: '文件类型检测测试',
+        results: results
+    });
+});
+router.get('/test-env', (req, res) => {
+    res.json({
+        ZHIPU_API_KEY_CONFIGURED: !!process.env.ZHIPU_API_KEY,
+        SEND_KEY_CONFIGURED: !!process.env.SEND_KEY,
+        ADMIN_PASSWORD_CONFIGURED: !!process.env.ADMIN_PASSWORD,
+        NODE_ENV: process.env.NODE_ENV || 'undefined'
+    });
+});
+
 // DELETE /api/medical/:imageId - 删除上传的图片
 router.delete('/:imageId', requireAuth, (req, res) => {
     const { imageId } = req.params;
