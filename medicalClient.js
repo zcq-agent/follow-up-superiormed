@@ -412,6 +412,14 @@ function copyRecognitionContent(button) {
 
 // HTML转义函数
 function escapeHtml(text) {
+    // 处理非字符串类型
+    if (typeof text !== 'string') {
+        if (text === null || text === undefined) {
+            return '';
+        }
+        text = String(text);
+    }
+
     const map = {
         '&': '&amp;',
         '<': '&lt;',
