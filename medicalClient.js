@@ -383,20 +383,30 @@ ${escapeHtml(contentText)}
     tempDiv.innerHTML = resultHtml;
     const newResult = tempDiv.firstChild;
 
+    console.log('=== 插入逻辑调试 ===');
+    console.log('resultHtml 长度:', resultHtml.length);
+    console.log('tempDiv.firstChild:', newResult);
+    console.log('fileId:', fileId);
+
     // 如果是更新现有结果，替换它
     if (fileId) {
         const existingResult = resultsArea.querySelector(`[data-file-id="${fileId}"]`);
         if (existingResult) {
+            console.log('替换现有结果');
             existingResult.replaceWith(newResult);
         } else {
+            console.log('添加新结果 (有fileId)');
             resultsArea.appendChild(newResult);
         }
     } else {
         // 移除旧的临时结果
         const oldResult = resultsArea.querySelector('.recognition-result-card:not([data-file-id])');
         if (oldResult) oldResult.remove();
+        console.log('添加新结果 (无fileId)');
         resultsArea.appendChild(newResult);
     }
+
+    console.log('插入完成，resultsArea 子节点数:', resultsArea.children.length);
 }
 
 // 复制识别内容
