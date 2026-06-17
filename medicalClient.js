@@ -381,7 +381,7 @@ ${escapeHtml(contentText)}
     // 添加到结果区域
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = resultHtml;
-    const newResult = tempDiv.firstChild;
+    const newResult = tempDiv.firstElementChild; // 使用 firstElementChild 而不是 firstChild
 
     console.log('=== 插入逻辑调试 ===');
     console.log('resultHtml 长度:', resultHtml.length);
