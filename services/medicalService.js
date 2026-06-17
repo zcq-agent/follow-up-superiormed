@@ -97,17 +97,56 @@ async function extractMedicalData(filePath, documentType) {
         switch (fileType) {
             case 'pdf':
                 console.log('使用 PDF 解析');
-                extractedText = await extractPDF(filePath);
+                try {
+                    extractedText = await extractPDF(filePath);
+                } catch (pdfError) {
+                    return {
+                        success: false,
+                        error: `PDF解析失败: ${pdfError.message}`,
+                        data: null,
+                        debug: {
+                            filePath: filePath,
+                            fileType: fileType,
+                            detectedExt: path.extname(filePath)
+                        }
+                    };
+                }
                 break;
 
             case 'word':
                 console.log('使用 Word 解析');
-                extractedText = await extractWord(filePath);
+                try {
+                    extractedText = await extractWord(filePath);
+                } catch (wordError) {
+                    return {
+                        success: false,
+                        error: `Word解析失败: ${wordError.message}`,
+                        data: null,
+                        debug: {
+                            filePath: filePath,
+                            fileType: fileType,
+                            detectedExt: path.extname(filePath)
+                        }
+                    };
+                }
                 break;
 
             case 'excel':
                 console.log('使用 Excel 解析');
-                extractedText = await extractExcel(filePath);
+                try {
+                    extractedText = await extractExcel(filePath);
+                } catch (excelError) {
+                    return {
+                        success: false,
+                        error: `Excel解析失败: ${excelError.message}`,
+                        data: null,
+                        debug: {
+                            filePath: filePath,
+                            fileType: fileType,
+                            detectedExt: path.extname(filePath)
+                        }
+                    };
+                }
                 break;
 
             case 'image':
@@ -117,8 +156,13 @@ async function extractMedicalData(filePath, documentType) {
             default:
                 return {
                     success: false,
-                    error: '不支持的文件类型',
-                    data: null
+                    error: `不支持的文件类型: ${fileType}`,
+                    data: null,
+                    debug: {
+                        filePath: filePath,
+                        fileType: fileType,
+                        detectedExt: path.extname(filePath)
+                    }
                 };
         }
 
@@ -142,7 +186,11 @@ async function extractMedicalData(filePath, documentType) {
         return {
             success: false,
             error: error.message || '未知错误',
-            data: null
+            data: null,
+            debug: {
+                filePath: typeof filePath !== 'undefined' ? filePath : 'undefined',
+                errorStage: 'extraction'
+            }
         };
     }
 }
