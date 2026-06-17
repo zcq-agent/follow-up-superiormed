@@ -212,6 +212,7 @@ async function handleUpload() {
 
         const uploadedFiles = uploadData.files;
         console.log(`批量上传成功: ${uploadedFiles.length} 个文件`);
+        console.log('上传的文件详情:', uploadedFiles);
 
         // 为每个上传的文件进行识别
         for (let i = 0; i < uploadedFiles.length; i++) {
