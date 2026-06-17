@@ -233,13 +233,23 @@ async function handleUpload() {
                     })
                 });
 
+                console.log('识别响应状态:', extractResponse.status, extractResponse.statusText);
+
                 let extractedData = null;
                 if (extractResponse.ok) {
                     const extractData = await extractResponse.json();
+                    console.log('识别响应数据:', extractData);
                     if (extractData.success) {
                         extractedData = extractData.data;
                         successCount++;
+                    } else {
+                        console.error('识别失败:', extractData.message);
                     }
+                } else {
+                    // 读取错误响应
+                    const errorText = await extractResponse.text();
+                    console.error('识别请求失败:', extractResponse.status, errorText);
+                    showStatus(uploadStatus, `❌ 识别失败 (${extractResponse.status})`, 'error');
                 }
 
                 // 保存文件信息
