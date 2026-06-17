@@ -282,10 +282,23 @@ async function extractFromImage(imagePath, documentType) {
         const responseText = await response.text();
 
         if (!response.ok) {
-            console.error('API错误响应:', responseText);
+            console.error('=== API错误响应 ===');
+            console.error('状态码:', response.status);
+            console.error('响应内容:', responseText);
+
+            let errorDetail = `API返回错误: ${response.status}`;
+            try {
+                const errorData = JSON.parse(responseText);
+                if (errorData.error) {
+                    errorDetail = errorData.error.message || errorData.error || errorDetail;
+                }
+            } catch (e) {
+                // 无法解析错误响应
+            }
+
             return {
                 success: false,
-                error: `API返回错误: ${response.status}`,
+                error: errorDetail,
                 data: null
             };
         }
@@ -303,9 +316,10 @@ async function extractFromImage(imagePath, documentType) {
         }
 
         if (data.error) {
+            console.error('智谱API返回错误:', data.error);
             return {
                 success: false,
-                error: data.error.message || '未知错误',
+                error: data.error.message || data.error || '未知错误',
                 data: null
             };
         }
